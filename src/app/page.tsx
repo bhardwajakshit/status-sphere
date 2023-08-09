@@ -14,7 +14,7 @@ import NotionIcon from "./assets/notion-icon.svg";
 import logo from "./assets/logo.png";
 import Image from "next/image";
 import BlinkingDot from "./blinkingDot";
-import { stat } from "fs";
+import { JellyTriangle } from "@uiball/loaders";
 
 interface GithubStatus {
   status: {
@@ -96,16 +96,6 @@ interface SendGridStatus {
   };
 }
 
-interface AWSStatus {
-  status: {
-    description: string;
-    indicator: string;
-  };
-  page: {
-    updated_at: string;
-  };
-}
-
 interface NotionStatus {
   status: {
     description: string;
@@ -173,8 +163,8 @@ const HomePage: React.FC = () => {
   const [sendGridStatus, setSendGridStatus] = useState<SendGridStatus | null>(
     null
   );
-  const [awsStatus, setAWSStatus] = useState<AWSStatus | null>(null);
   const [notionstatus, setNotionStatus] = useState<NotionStatus | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const serviceEndpoints = [
     "https://www.githubstatus.com/api/v2/status.json",
@@ -186,7 +176,6 @@ const HomePage: React.FC = () => {
     "https://www.stripestatus.com/api/v2/status.json",
     "https://status.sendgrid.com/api/v2/status.json",
     "https://status.notion.so/api/v2/status.json",
-    "https://gcp-dashboard.b-cdn.net/metrics?region=us-east-1&groupby=minute",
   ];
 
   async function fetchStatus(endpoint: RequestInfo | URL) {
@@ -200,25 +189,36 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       const fetchPromises = serviceEndpoints.map((endpoint) =>
         fetchStatus(endpoint)
       );
 
-      const fetchedStatuses = await Promise.all(fetchPromises);
-
-      setGithubStatus(fetchedStatuses[0]);
-      setVercelStatus(fetchedStatuses[1]);
-      setLinkedInStatus(fetchedStatuses[2]);
-      setLinkedInApiStatus(fetchedStatuses[3]);
-      setMongoDBStatus(fetchedStatuses[4]);
-      setOpenAIStatus(fetchedStatuses[5]);
-      setStripeStatus(fetchedStatuses[6]);
-      setSendGridStatus(fetchedStatuses[7]);
-      setNotionStatus(fetchedStatuses[8]);
-      setAWSStatus(fetchedStatuses[9]);
+      Promise.all(fetchPromises)
+        .then((fetchedStatuses) => {
+          setTimeout(() => {
+            setGithubStatus(fetchedStatuses[0]);
+            setVercelStatus(fetchedStatuses[1]);
+            setLinkedInStatus(fetchedStatuses[2]);
+            setLinkedInApiStatus(fetchedStatuses[3]);
+            setMongoDBStatus(fetchedStatuses[4]);
+            setOpenAIStatus(fetchedStatuses[5]);
+            setStripeStatus(fetchedStatuses[6]);
+            setSendGridStatus(fetchedStatuses[7]);
+            setNotionStatus(fetchedStatuses[8]);
+            setIsLoading(false);
+          }, 2000);
+        })
+        .catch((error) => {
+          // Handle errors here
+          console.error("Error fetching data:", error);
+          setIsLoading(false);
+        });
     };
 
     const intervalId = setInterval(fetchData, 15000); // Fetch every 15 seconds
+
+    fetchData(); // Fetch data immediately upon component mount
 
     return () => clearInterval(intervalId);
   }, []);
@@ -231,7 +231,26 @@ const HomePage: React.FC = () => {
           Status Sphere
         </h1>
       </div>
-      <div className="flex z-10 w-full py-10 items-center justify-center font-mono text-sm lg:flex">
+      <div className="flex z-10 w-full py-10 items-center justify-center font-mono text-sm">
+        <div className="h-[70vh] flex items-center justify-center">
+          {isLoading &&
+            (!githubStatus ||
+              !vercelStatus ||
+              !linkedInStatus ||
+              !linkedInApiStatus ||
+              !mongoDBStatus ||
+              !openAIStatus ||
+              !stripeStatus ||
+              !sendGridStatus ||
+              !notionstatus) && 
+
+              <JellyTriangle 
+               size={40}
+               speed={1.75} 
+               color="white" 
+              />
+            }
+        </div>
         <div className="grid grid-cols-3 gap-4">
           {githubStatus && (
             <StatusBox
@@ -303,15 +322,6 @@ const HomePage: React.FC = () => {
               status={sendGridStatus.status.description}
               updatedAt={sendGridStatus.page.updated_at}
               indicator={sendGridStatus.status.indicator}
-            />
-          )}
-          {awsStatus && (
-            <StatusBox
-              title="AWS Server Status"
-              icon={<AWSIcon />}
-              status={awsStatus.status.description}
-              updatedAt={awsStatus.page.updated_at}
-              indicator={awsStatus.status.indicator}
             />
           )}
           {notionstatus && (
