@@ -242,16 +242,11 @@ const HomePage: React.FC = () => {
               !openAIStatus ||
               !stripeStatus ||
               !sendGridStatus ||
-              !notionstatus) && 
-
-              <JellyTriangle 
-               size={40}
-               speed={1.75} 
-               color="white" 
-              />
-            }
+              !notionstatus) && (
+              <JellyTriangle size={40} speed={1.75} color="white" />
+            )}
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid xl:grid-cols-3 xs:grid-cols-1 lg:grid-cols-2 gap-4">
           {githubStatus && (
             <StatusBox
               title="GitHub Server Status"
