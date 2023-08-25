@@ -11,10 +11,12 @@ import SendGridIcon from "./assets/sendgrid-icon.svg";
 import AWSIcon from "./assets/aws-icon.svg";
 import GitHub from "./assets/github.svg";
 import NotionIcon from "./assets/notion-icon.svg";
+import BrightDataIcon from "./assets/brightdata-icon.svg";
 import logo from "./assets/logo.png";
 import Image from "next/image";
 import BlinkingDot from "./blinkingDot";
 import { JellyTriangle } from "@uiball/loaders";
+import { fetchData } from "./utils/fetchData";
 
 interface GithubStatus {
   status: {
@@ -106,10 +108,14 @@ interface NotionStatus {
   };
 }
 
+interface BrightdataStatus {
+  status: boolean;
+}
+
 interface StatusData {
   title: string;
   status: string;
-  updatedAt: string;
+  updatedAt: string | number;
   icon: React.ReactNode;
   indicator?: string;
 }
@@ -164,6 +170,8 @@ const HomePage: React.FC = () => {
     null
   );
   const [notionstatus, setNotionStatus] = useState<NotionStatus | null>(null);
+  const [brightdataStatus, setBrightdataStatus] =
+    useState<BrightdataStatus | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const serviceEndpoints = [
@@ -176,49 +184,39 @@ const HomePage: React.FC = () => {
     "https://www.stripestatus.com/api/v2/status.json",
     "https://status.sendgrid.com/api/v2/status.json",
     "https://status.notion.so/api/v2/status.json",
+    "https://api.brightdata.com/network_status/all",
   ];
 
-  async function fetchStatus(endpoint: RequestInfo | URL) {
-    return fetch(endpoint)
-      .then((response) => response.json())
-      .catch((error) => {
-        console.error(`Error fetching status from ${endpoint}:`, error);
-        return null;
-      });
-  }
-
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStatuses = async () => {
       setIsLoading(true);
       const fetchPromises = serviceEndpoints.map((endpoint) =>
-        fetchStatus(endpoint)
+        fetchData(endpoint)
       );
 
       Promise.all(fetchPromises)
         .then((fetchedStatuses) => {
-          setTimeout(() => {
-            setGithubStatus(fetchedStatuses[0]);
-            setVercelStatus(fetchedStatuses[1]);
-            setLinkedInStatus(fetchedStatuses[2]);
-            setLinkedInApiStatus(fetchedStatuses[3]);
-            setMongoDBStatus(fetchedStatuses[4]);
-            setOpenAIStatus(fetchedStatuses[5]);
-            setStripeStatus(fetchedStatuses[6]);
-            setSendGridStatus(fetchedStatuses[7]);
-            setNotionStatus(fetchedStatuses[8]);
-            setIsLoading(false);
-          }, 2000);
+          setGithubStatus(fetchedStatuses[0]);
+          setVercelStatus(fetchedStatuses[1]);
+          setLinkedInStatus(fetchedStatuses[2]);
+          setLinkedInApiStatus(fetchedStatuses[3]);
+          setMongoDBStatus(fetchedStatuses[4]);
+          setOpenAIStatus(fetchedStatuses[5]);
+          setStripeStatus(fetchedStatuses[6]);
+          setSendGridStatus(fetchedStatuses[7]);
+          setNotionStatus(fetchedStatuses[8]);
+          setBrightdataStatus(fetchedStatuses[9]);
+          setIsLoading(false);
         })
         .catch((error) => {
-          // Handle errors here
           console.error("Error fetching data:", error);
           setIsLoading(false);
         });
     };
 
-    const intervalId = setInterval(fetchData, 15000); // Fetch every 15 seconds
+    const intervalId = setInterval(fetchStatuses, 15000); // Fetch every 15 seconds
 
-    fetchData(); // Fetch data immediately upon component mount
+    fetchStatuses();
 
     return () => clearInterval(intervalId);
   }, []);
@@ -281,6 +279,19 @@ const HomePage: React.FC = () => {
               status={linkedInApiStatus.status.description}
               updatedAt={linkedInApiStatus.page.updated_at}
               indicator={linkedInApiStatus.status.indicator}
+            />
+          )}
+          {brightdataStatus && (
+            <StatusBox
+              title="Brightdata Server Status"
+              icon={<BrightDataIcon />}
+              status={
+                brightdataStatus?.status
+                  ? "All Systems Operational"
+                  : "Degraded Performance"
+              }
+              updatedAt={Date.now()}
+              indicator={brightdataStatus?.status ? "green" : "orange"}
             />
           )}
           {mongoDBStatus && (
